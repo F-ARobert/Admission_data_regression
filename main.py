@@ -15,7 +15,7 @@ from sklearn.preprocessing import Normalizer
 from sklearn.metrics import r2_score, accuracy_score
 from sklearn.model_selection import KFold
 
-num_epochs = 400
+num_epochs = 154
 batch_size = 8
 
 def create_model():
@@ -27,8 +27,8 @@ def create_model():
 
     # Add layers to model
     base_model.add(inputs)
+    base_model.add(Dense(16, activation="relu"))
     base_model.add(Dense(32, activation="relu"))
-    base_model.add(Dense(32))
     base_model.add(Dense(1))  # Model output. Regression model == single output
 
     # Initialize optimizer and compile model
@@ -89,10 +89,12 @@ model = create_model()
 
 print(model.summary())
 
-mse_score = []  # List to hold individual performances
-mae_score = []  # List to hold individual performances
-acc_score = []  # List to hold individual performances
+# Lists to hold individual performances
+mse_score = []
+mae_score = []
+acc_score = []
 all_mae_histories = []
+all_val_mae_histories = []
 
 for train_index, test_index in kf.split(features):
     features_train, features_test = features.iloc[train_index, :], features.iloc[test_index, :]
@@ -104,11 +106,14 @@ for train_index, test_index in kf.split(features):
     # Transform test data using ct columntransformer instance
     features_test_scaled = ct.transform(features_test)
 
-    train_history = model.fit(features_train_scaled, labels_train, epochs=num_epochs, batch_size=batch_size, verbose=1)
-    print(train_history.history)
+    train_history = model.fit(features_train_scaled, labels_train, validation_data=(features_test_scaled, labels_test),
+                              epochs=num_epochs, batch_size=batch_size, verbose=1)
+
     # Create list of MAE history
     mae_history = train_history.history['mae']
+    val_mae_history = train_history.history['val_mae']
     all_mae_histories.append(mae_history)
+    all_val_mae_histories.append(val_mae_history)
 
     # Evaluate model
     res_mse, res_mae = model.evaluate(features_test_scaled, labels_test, verbose=0)
@@ -122,6 +127,7 @@ for train_index, test_index in kf.split(features):
 
 # Calculate MAE average
 average_mae_history = [np.mean([x[i] for x in all_mae_histories]) for i in range(num_epochs)]
+average_val_mae_history = [np.mean([x[i] for x in all_val_mae_histories]) for i in range(num_epochs)]
 
 # Calculate average accuracy score
 avg_acc_score = sum(acc_score) / k
@@ -131,10 +137,15 @@ print('Avg accuracy : {}'.format(avg_acc_score))
 
 # Show plot of MAE vs epochs in training
 smooth_mae_history = smooth_curve(average_mae_history)
-plt.plot(range(1, len(smooth_mae_history) + 1),
-         smooth_mae_history)
-plt.xlabel('Epochs')
-plt.ylabel('Validation MAE')
+smooth_val_mae_history = smooth_curve(average_val_mae_history)
+fig = plt.figure()
+ax1 = fig.add_subplot(1, 1, 1)
+ax1.plot(smooth_mae_history)
+ax1.plot(smooth_val_mae_history)
+ax1.set_title('model mae')
+ax1.set_ylabel('MAE')
+ax1.set_xlabel('epoch')
+ax1.legend(['train', 'validation'], loc='upper left')
 plt.show()
 
 # todo Implement mat plot lib plots of error vs epochs
