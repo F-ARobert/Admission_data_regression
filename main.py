@@ -15,6 +15,30 @@ from sklearn.preprocessing import Normalizer
 from sklearn.metrics import r2_score
 from sklearn.model_selection import KFold
 
+
+def create_model():
+    # Create regression model
+    base_model = Sequential()
+
+    # Create input layer to the network model
+    inputs = InputLayer(activation='relu', input_shape=(features.shape[1],))
+
+    # Add layers to model
+    base_model.add(inputs)
+    base_model.add(Dense(32, activation="relu"))
+    base_model.add(Dense(32))
+    base_model.add(Dense(1))  # Model output. Regression model == single output
+
+    # Initialize optimizer and compile model
+    # Create instance of Adam
+    opt = Adam(learning_rate=0.01)
+
+    # Compile model
+    base_model.compile(loss='mse', metrics=['mae'], optimizer=opt)
+
+    return base_model
+
+
 # Import data
 dataset = pd.read_csv("admissions_data.csv")
 # print(admission_data.head())
@@ -46,28 +70,13 @@ numerical_columns = numerical_features.columns
 # Creating the transformer that will be applied to the data
 ct = ColumnTransformer([("only numeric", Normalizer(), numerical_columns)], remainder='passthrough')
 
-# Create regression model
-model = Sequential()
-
-# Create input layer to the network model
-inputs = InputLayer(activation='relu', input_shape=(features.shape[1],))
-
-# Add layers to model
-model.add(inputs)
-model.add(Dense(32, activation="relu"))
-model.add(Dense(32))
-model.add(Dense(1))  # Model output. Regression model == single output
+model = create_model()
 
 print(model.summary())
 
-# Initialize optimizer and compile model
-# Create instance of Adam
-opt = Adam(learning_rate=0.01)
 
-# Compile model
-model.compile(loss='mse', metrics=['mae'], optimizer=opt)
-
-acc_score = [] # List to hold individual performances
+mse_score = []  # List to hold individual performances
+mae_score = []  # List to hold individual performances
 
 for train_index, test_index in kf.split(features):
     features_train, features_test = features.iloc[train_index, :], features.iloc[test_index, :]
@@ -79,12 +88,10 @@ for train_index, test_index in kf.split(features):
     # Transform test data using ct columntransformer instance
     features_test_scaled = ct.transform(features_test)
 
-    
+    model.fit(features_train, labels_train, epochs=100, batch_size=8, verbose=1)
+    pred_values = model.predict(features_test)
 
-    model.fit(features_train, labels_train)
-    pred_values = model.predict(X_test)
-
-    acc = accuracy_score(pred_values, y_test)
+    acc = accuracy_score(pred_values, labels_test)
     acc_score.append(acc)
 
 avg_acc_score = sum(acc_score) / k
