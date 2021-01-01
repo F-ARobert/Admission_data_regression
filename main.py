@@ -15,6 +15,8 @@ from sklearn.preprocessing import Normalizer
 from sklearn.metrics import r2_score, accuracy_score
 from sklearn.model_selection import KFold
 
+num_epochs = 400
+batch_size = 8
 
 def create_model():
     # Create regression model
@@ -37,6 +39,19 @@ def create_model():
     base_model.compile(loss='mse', metrics=['mae'], optimizer=opt)
 
     return base_model
+
+
+def smooth_curve(points, factor=0.9):
+    smoothed_points = []
+    for point in points:
+        if smoothed_points:
+            previous = smoothed_points[-1]
+            smoothed_points.append(previous * factor + point * (1 -
+                                                                factor))
+        else:
+            smoothed_points.append(point)
+
+    return smoothed_points
 
 
 # Import data
@@ -77,6 +92,7 @@ print(model.summary())
 mse_score = []  # List to hold individual performances
 mae_score = []  # List to hold individual performances
 acc_score = []  # List to hold individual performances
+all_mae_histories = []
 
 for train_index, test_index in kf.split(features):
     features_train, features_test = features.iloc[train_index, :], features.iloc[test_index, :]
@@ -88,7 +104,12 @@ for train_index, test_index in kf.split(features):
     # Transform test data using ct columntransformer instance
     features_test_scaled = ct.transform(features_test)
 
-    model.fit(features_train_scaled, labels_train, epochs=100, batch_size=1, verbose=1)
+    train_history = model.fit(features_train_scaled, labels_train, epochs=num_epochs, batch_size=batch_size, verbose=1)
+    print(train_history.history)
+    # Create list of MAE history
+    mae_history = train_history.history['mae']
+    all_mae_histories.append(mae_history)
+
     # Evaluate model
     res_mse, res_mae = model.evaluate(features_test_scaled, labels_test, verbose=0)
     mae_score.append(res_mae)
@@ -96,10 +117,25 @@ for train_index, test_index in kf.split(features):
 
     # Evaluate accuracy of predictions
     pred_values = model.predict(features_test_scaled)
-    acc = r2_score(labels_test,pred_values)
+    acc = r2_score(labels_test, pred_values)
     acc_score.append(acc)
 
+# Calculate MAE average
+average_mae_history = [np.mean([x[i] for x in all_mae_histories]) for i in range(num_epochs)]
+
+# Calculate average accuracy score
 avg_acc_score = sum(acc_score) / k
 
 print('accuracy of each fold - {}'.format(acc_score))
 print('Avg accuracy : {}'.format(avg_acc_score))
+
+# Show plot of MAE vs epochs in training
+smooth_mae_history = smooth_curve(average_mae_history)
+plt.plot(range(1, len(smooth_mae_history) + 1),
+         smooth_mae_history)
+plt.xlabel('Epochs')
+plt.ylabel('Validation MAE')
+plt.show()
+
+# todo Implement mat plot lib plots of error vs epochs
+# todo Add Early stopping to prevent overfitting
