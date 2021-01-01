@@ -10,8 +10,6 @@ from tensorflow.keras.layers import InputLayer
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 
-
-from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import Normalizer
 from sklearn.metrics import r2_score
@@ -31,13 +29,11 @@ labels = dataset.iloc[:-1]
 
 # Features are from col. 1 to 7
 features = dataset.iloc[:, 0:-1]  # Select all rows from all columns save last
-#print(features.head())
-#print(labels.describe())
+# print(features.head())
+# print(labels.describe())
 
 # Split training data and test data
 # Because we don't have a lot of data, we should use k-fold validation
-# Todo implement k-fold data validation.
-
 # Number of k units
 k = 5
 kf = KFold(n_splits=k, shuffle=True, random_state=15)
@@ -50,7 +46,6 @@ numerical_columns = numerical_features.columns
 # Creating the transformer that will be applied to the data
 ct = ColumnTransformer([("only numeric", Normalizer(), numerical_columns)], remainder='passthrough')
 
-
 # Create regression model
 model = Sequential()
 
@@ -61,18 +56,38 @@ inputs = InputLayer(activation='relu', input_shape=(features.shape[1],))
 model.add(inputs)
 model.add(Dense(32, activation="relu"))
 model.add(Dense(32))
-model.add(Dense(1)) # Model output. Regression model == single output
+model.add(Dense(1))  # Model output. Regression model == single output
 
 print(model.summary())
 
-########################################################################
 # Initialize optimizer and compile model
-########################################################################
 # Create instance of Adam
 opt = Adam(learning_rate=0.01)
 
 # Compile model
 model.compile(loss='mse', metrics=['mae'], optimizer=opt)
 
+acc_score = [] # List to hold individual performances
+
 for train_index, test_index in kf.split(features):
-    pass
+    features_train, features_test = features.iloc[train_index, :], features.iloc[test_index, :]
+    labels_train, labels_test = labels[train_index], labels[test_index]
+
+    # Apply fit column transformer to training data
+    features_train_scaled = ct.fit_transform(features_train)
+
+    # Transform test data using ct columntransformer instance
+    features_test_scaled = ct.transform(features_test)
+
+    
+
+    model.fit(features_train, labels_train)
+    pred_values = model.predict(X_test)
+
+    acc = accuracy_score(pred_values, y_test)
+    acc_score.append(acc)
+
+avg_acc_score = sum(acc_score) / k
+
+print('accuracy of each fold - {}'.format(acc_score))
+print('Avg accuracy : {}'.format(avg_acc_score))
