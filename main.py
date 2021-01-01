@@ -12,7 +12,7 @@ from tensorflow.keras.optimizers import Adam
 
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import Normalizer
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, accuracy_score
 from sklearn.model_selection import KFold
 
 
@@ -21,7 +21,7 @@ def create_model():
     base_model = Sequential()
 
     # Create input layer to the network model
-    inputs = InputLayer(activation='relu', input_shape=(features.shape[1],))
+    inputs = InputLayer(input_shape=(features.shape[1],))
 
     # Add layers to model
     base_model.add(inputs)
@@ -49,7 +49,7 @@ dataset = dataset.drop(['Serial No.'], axis=1)  # removes serial numbers from th
 # print(admission_data.head())
 
 # select labels
-labels = dataset.iloc[:-1]
+labels = dataset.iloc[:, -1]
 
 # Features are from col. 1 to 7
 features = dataset.iloc[:, 0:-1]  # Select all rows from all columns save last
@@ -74,9 +74,9 @@ model = create_model()
 
 print(model.summary())
 
-
 mse_score = []  # List to hold individual performances
 mae_score = []  # List to hold individual performances
+acc_score = []  # List to hold individual performances
 
 for train_index, test_index in kf.split(features):
     features_train, features_test = features.iloc[train_index, :], features.iloc[test_index, :]
@@ -88,10 +88,15 @@ for train_index, test_index in kf.split(features):
     # Transform test data using ct columntransformer instance
     features_test_scaled = ct.transform(features_test)
 
-    model.fit(features_train, labels_train, epochs=100, batch_size=8, verbose=1)
-    pred_values = model.predict(features_test)
+    model.fit(features_train_scaled, labels_train, epochs=100, batch_size=1, verbose=1)
+    # Evaluate model
+    res_mse, res_mae = model.evaluate(features_test_scaled, labels_test, verbose=0)
+    mae_score.append(res_mae)
+    mse_score.append(res_mae)
 
-    acc = accuracy_score(pred_values, labels_test)
+    # Evaluate accuracy of predictions
+    pred_values = model.predict(features_test_scaled)
+    acc = r2_score(labels_test,pred_values)
     acc_score.append(acc)
 
 avg_acc_score = sum(acc_score) / k
