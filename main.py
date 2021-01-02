@@ -16,7 +16,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, accuracy_score
 from sklearn.model_selection import KFold
 
-num_epochs = 400
+num_epochs = 50
 batch_size = 16
 
 
@@ -55,6 +55,25 @@ def smooth_curve(points, factor=0.9):
 
     return smoothed_points
 
+
+def find_max_length(array):
+    max_length = 0
+    for i in array:
+        if len(i) > max_length:
+            max_length = len(i)
+
+    return max_length
+
+
+def pad_array(array):
+    max_length = find_max_length(array)
+    array_pad = []
+    for i in array:
+        len(i) < max_length
+        diff = max_length - len(i)
+        array_pad.append(np.pad(i, (0, diff), 'constant', constant_values=i[-1]))
+
+    return array_pad, max_length
 
 # Import data
 dataset = pd.read_csv("admissions_data.csv")
@@ -136,14 +155,17 @@ for train_index, test_index in kf.split(features):
     acc_score.append(acc)
 
 
-# Before averages are calculated, we must equalize vector lengths
-
+# Before averages are calculated, reshape vector lengths
+loss_pad, max_epoch = pad_array(loss)
+val_loss_pad, max_epoch = pad_array(val_loss)
+all_mae_histories_pad, max_epoch = pad_array(all_mae_histories)
+all_val_mae_histories_pad, max_epoch = pad_array(all_val_mae_histories)
 
 # Calculate MAE and loss averages
-average_mae_history = [np.mean([x[i] for x in all_mae_histories]) for i in range(num_epochs)]
-average_val_mae_history = [np.mean([x[i] for x in all_val_mae_histories]) for i in range(num_epochs)]
-average_loss = [np.mean([x[i] for x in loss]) for i in range(num_epochs)]
-average_val_loss = [np.mean([x[i] for x in val_loss]) for i in range(num_epochs)]
+average_mae_history = [np.mean([x[i] for x in all_mae_histories_pad]) for i in range(max_epoch)]
+average_val_mae_history = [np.mean([x[i] for x in all_val_mae_histories_pad]) for i in range(max_epoch)]
+average_loss = [np.mean([x[i] for x in loss_pad]) for i in range(max_epoch)]
+average_val_loss = [np.mean([x[i] for x in val_loss_pad]) for i in range(max_epoch)]
 
 # Calculate average accuracy score
 avg_acc_score = np.mean(acc_score)
