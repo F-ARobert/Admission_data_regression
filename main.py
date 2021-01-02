@@ -83,6 +83,10 @@ kf = KFold(n_splits=k, shuffle=True, random_state=15)
 # Creating the transformer that will be applied to the data
 norm = Normalizer()
 
+# Create callback for EarlyStopping
+# Min_delta represents 0.01%
+callback = EarlyStopping(monitor='loss', min_delta=0.0001, patience=20, mode='min', restore_best_weights=True)
+
 # Create model
 model = create_model()
 
@@ -111,7 +115,7 @@ for train_index, test_index in kf.split(features):
     # print(features_test_scaled.describe())
 
     train_history = model.fit(features_train_scaled, labels_train, validation_data=(features_test_scaled, labels_test),
-                              epochs=num_epochs, batch_size=batch_size, verbose=1)
+                              epochs=num_epochs, batch_size=batch_size, verbose=1, callbacks=[callback])
 
     # print(train_history.history.keys())
 
@@ -130,6 +134,9 @@ for train_index, test_index in kf.split(features):
     pred_values = model.predict(features_test_scaled)
     acc = r2_score(labels_test, pred_values)
     acc_score.append(acc)
+
+
+# Before averages are calculated, we must equalize vector lengths
 
 
 # Calculate MAE and loss averages
