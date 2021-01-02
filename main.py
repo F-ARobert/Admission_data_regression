@@ -16,8 +16,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, accuracy_score
 from sklearn.model_selection import KFold
 
-num_epochs = 200
-batch_size = 4
+num_epochs = 400
+batch_size = 16
+
 
 def create_model():
     # Create regression model
@@ -28,8 +29,8 @@ def create_model():
 
     # Add layers to model
     base_model.add(inputs)
-    base_model.add(Dense(32, activation="relu"))
-    base_model.add(Dense(32, activation="relu"))
+    base_model.add(Dense(8, activation="relu"))
+    base_model.add(Dense(8, activation="relu"))
     base_model.add(Dense(1))  # Model output. Regression model == single output
 
     # Initialize optimizer and compile model
@@ -85,64 +86,69 @@ norm = Normalizer()
 # Create model
 model = create_model()
 
-print(model.summary())
+# print(model.summary())
 
 # Lists to hold individual performances
-mse_score = []
-mae_score = []
+loss = []
+val_loss = []
 acc_score = []
 all_mae_histories = []
 all_val_mae_histories = []
 
+# For loop permitting testing and validating over all 5 data sub-units
 for train_index, test_index in kf.split(features):
     features_train, features_test = features.iloc[train_index, :], features.iloc[test_index, :]
     labels_train, labels_test = labels[train_index], labels[test_index]
 
-    # Apply fit to training data
+    # Apply normalization to training data
     features_train_scaled = norm.fit_transform(features_train)
-    #features_train_scaled = pd.DataFrame(features_train_scaled, columns=features_train.columns)
-
     features_test_scaled = norm.transform(features_test)
 
-    #features_test_scaled = pd.DataFrame(features_test_scaled, columns=features_test.columns)
-
-    #print(features_train_scaled.describe())
-    #print(features_test_scaled.describe())
+    # Uncomment to visualize normalized data
+    # features_train_scaled = pd.DataFrame(features_train_scaled, columns=features_train.columns)
+    # features_test_scaled = pd.DataFrame(features_test_scaled, columns=features_test.columns)
+    # print(features_train_scaled.describe())
+    # print(features_test_scaled.describe())
 
     train_history = model.fit(features_train_scaled, labels_train, validation_data=(features_test_scaled, labels_test),
                               epochs=num_epochs, batch_size=batch_size, verbose=1)
 
+    # print(train_history.history.keys())
+
     # Create list of MAE history
-    mae_history = train_history.history['mae']
-    val_mae_history = train_history.history['val_mae']
-    all_mae_histories.append(mae_history)
-    all_val_mae_histories.append(val_mae_history)
+    loss.append(train_history.history['loss'])
+    val_loss.append(train_history.history['val_loss'])
+    all_mae_histories.append(train_history.history['mae'])
+    all_val_mae_histories.append(train_history.history['val_mae'])
 
     # Evaluate model
-    res_mse, res_mae = model.evaluate(features_test_scaled, labels_test, verbose=0)
-    mae_score.append(res_mae)
-    mse_score.append(res_mae)
+    # res_mse, res_mae = model.evaluate(features_test_scaled, labels_test, verbose=0)
+    # mae_score.append(res_mae)
+    # mse_score.append(res_mae)
 
     # Evaluate accuracy of predictions
     pred_values = model.predict(features_test_scaled)
     acc = r2_score(labels_test, pred_values)
     acc_score.append(acc)
 
-# Calculate MAE average
+
+# Calculate MAE and loss averages
 average_mae_history = [np.mean([x[i] for x in all_mae_histories]) for i in range(num_epochs)]
 average_val_mae_history = [np.mean([x[i] for x in all_val_mae_histories]) for i in range(num_epochs)]
+average_loss = [np.mean([x[i] for x in loss]) for i in range(num_epochs)]
+average_val_loss = [np.mean([x[i] for x in val_loss]) for i in range(num_epochs)]
 
 # Calculate average accuracy score
-avg_acc_score = sum(acc_score) / k
+avg_acc_score = np.mean(acc_score)
 
 print('accuracy of each fold - {}'.format(acc_score))
 print('Avg accuracy : {}'.format(avg_acc_score))
 
-# Show plot of MAE vs epochs in training
+# Smooth lines for plots of MAE and loss vs epochs in training
 smooth_mae_history = smooth_curve(average_mae_history)
 smooth_val_mae_history = smooth_curve(average_val_mae_history)
-
-#smooth_loss = smooth_curve(train_history.history['loss'])
+smooth_loss = smooth_curve(average_loss)
+smooth_val_loss = smooth_curve(average_val_loss)
 
 fig = plt.figure()
 ax1 = fig.add_subplot(2, 1, 1)
@@ -153,16 +159,15 @@ ax1.set_ylabel('MAE')
 ax1.set_xlabel('epoch')
 ax1.legend(['train', 'validation'], loc='upper right')
 
-# ax2 = fig.add_subplot(2, 1, 2)
-# ax2.plot(smooth_mae_history)
-# ax2.plot(smooth_val_mae_history)
-# ax2.set_title('model mae')
-# ax2.set_ylabel('MAE')
-# ax2.set_xlabel('epoch')
-# ax2.legend(['train', 'validation'], loc='upper left')
-
+ax2 = fig.add_subplot(2, 1, 2)
+ax2.plot(smooth_loss)
+ax2.plot(smooth_val_loss)
+ax2.set_title('model loss')
+ax2.set_ylabel('loss')
+ax2.set_xlabel('epoch')
+ax2.legend(['train', 'validation'], loc='upper right')
+plt.tight_layout()
 plt.show()
-
 
 # todo Implement mat plot lib plots of error vs epochs
 # todo Add Early stopping to prevent overfitting
