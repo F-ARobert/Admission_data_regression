@@ -12,11 +12,12 @@ from tensorflow.keras.optimizers import Adam
 
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import Normalizer
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, accuracy_score
 from sklearn.model_selection import KFold
 
-num_epochs = 154
-batch_size = 8
+num_epochs = 200
+batch_size = 4
 
 def create_model():
     # Create regression model
@@ -27,13 +28,13 @@ def create_model():
 
     # Add layers to model
     base_model.add(inputs)
-    base_model.add(Dense(16, activation="relu"))
+    base_model.add(Dense(32, activation="relu"))
     base_model.add(Dense(32, activation="relu"))
     base_model.add(Dense(1))  # Model output. Regression model == single output
 
     # Initialize optimizer and compile model
     # Create instance of Adam
-    opt = Adam(learning_rate=0.01)
+    opt = Adam(learning_rate=0.005)
 
     # Compile model
     base_model.compile(loss='mse', metrics=['mae'], optimizer=opt)
@@ -78,13 +79,10 @@ k = 5
 kf = KFold(n_splits=k, shuffle=True, random_state=15)
 
 # Normalize data
-# List all numerical features. This allows to select numerical features (float64 or int64) automatically
-numerical_features = features.select_dtypes(include=['float64', 'int64'])
-numerical_columns = numerical_features.columns
-
 # Creating the transformer that will be applied to the data
-ct = ColumnTransformer([("only numeric", Normalizer(), numerical_columns)], remainder='passthrough')
+norm = Normalizer()
 
+# Create model
 model = create_model()
 
 print(model.summary())
@@ -100,11 +98,16 @@ for train_index, test_index in kf.split(features):
     features_train, features_test = features.iloc[train_index, :], features.iloc[test_index, :]
     labels_train, labels_test = labels[train_index], labels[test_index]
 
-    # Apply fit column transformer to training data
-    features_train_scaled = ct.fit_transform(features_train)
+    # Apply fit to training data
+    features_train_scaled = norm.fit_transform(features_train)
+    #features_train_scaled = pd.DataFrame(features_train_scaled, columns=features_train.columns)
 
-    # Transform test data using ct columntransformer instance
-    features_test_scaled = ct.transform(features_test)
+    features_test_scaled = norm.transform(features_test)
+
+    #features_test_scaled = pd.DataFrame(features_test_scaled, columns=features_test.columns)
+
+    #print(features_train_scaled.describe())
+    #print(features_test_scaled.describe())
 
     train_history = model.fit(features_train_scaled, labels_train, validation_data=(features_test_scaled, labels_test),
                               epochs=num_epochs, batch_size=batch_size, verbose=1)
@@ -138,15 +141,28 @@ print('Avg accuracy : {}'.format(avg_acc_score))
 # Show plot of MAE vs epochs in training
 smooth_mae_history = smooth_curve(average_mae_history)
 smooth_val_mae_history = smooth_curve(average_val_mae_history)
+
+#smooth_loss = smooth_curve(train_history.history['loss'])
+
 fig = plt.figure()
-ax1 = fig.add_subplot(1, 1, 1)
+ax1 = fig.add_subplot(2, 1, 1)
 ax1.plot(smooth_mae_history)
 ax1.plot(smooth_val_mae_history)
 ax1.set_title('model mae')
 ax1.set_ylabel('MAE')
 ax1.set_xlabel('epoch')
-ax1.legend(['train', 'validation'], loc='upper left')
+ax1.legend(['train', 'validation'], loc='upper right')
+
+# ax2 = fig.add_subplot(2, 1, 2)
+# ax2.plot(smooth_mae_history)
+# ax2.plot(smooth_val_mae_history)
+# ax2.set_title('model mae')
+# ax2.set_ylabel('MAE')
+# ax2.set_xlabel('epoch')
+# ax2.legend(['train', 'validation'], loc='upper left')
+
 plt.show()
+
 
 # todo Implement mat plot lib plots of error vs epochs
 # todo Add Early stopping to prevent overfitting
