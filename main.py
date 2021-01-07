@@ -16,8 +16,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, accuracy_score
 from sklearn.model_selection import KFold
 
-num_epochs = 50
-batch_size = 16
+num_epochs = 100
+batch_size = 8
 
 
 def create_model():
@@ -29,13 +29,13 @@ def create_model():
 
     # Add layers to model
     base_model.add(inputs)
-    base_model.add(Dense(8, activation="relu"))
-    base_model.add(Dense(8, activation="relu"))
+    base_model.add(Dense(64, activation="relu"))
+    #base_model.add(Dense(32, activation="relu"))
     base_model.add(Dense(1))  # Model output. Regression model == single output
 
     # Initialize optimizer and compile model
     # Create instance of Adam
-    opt = Adam(learning_rate=0.005)
+    opt = Adam(learning_rate=0.001)
 
     # Compile model
     base_model.compile(loss='mse', metrics=['mae'], optimizer=opt)
@@ -100,7 +100,9 @@ kf = KFold(n_splits=k, shuffle=True, random_state=15)
 
 # Normalize data
 # Creating the transformer that will be applied to the data
-norm = Normalizer()
+#norm = Normalizer()
+norm = StandardScaler() # Standard sclaer yeilds better results
+
 
 # Create callback for EarlyStopping
 # Min_delta represents 0.01%
