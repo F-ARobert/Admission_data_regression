@@ -20,6 +20,8 @@ num_epochs = 400
 batch_size = 16
 nb_neurons = 64
 learning_rate = 0.001
+min_delta = 0.00001
+patience = 20
 
 
 def create_model():
@@ -108,7 +110,7 @@ norm = StandardScaler() # Standard sclaer yeilds better results
 
 # Create callback for EarlyStopping
 # Min_delta represents 0.01%
-callback = EarlyStopping(monitor='loss', min_delta=0.00001, patience=20, mode='min', restore_best_weights=True)
+callback = EarlyStopping(monitor='loss', min_delta=min_delta, patience=patience, mode='min', restore_best_weights=True)
 
 # Create model
 model = create_model()
