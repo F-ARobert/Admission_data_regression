@@ -16,4 +16,4 @@ learning_rate = 0.001
 min_delta = 0.00001  
 patience = 20  
 
-While the model does show signs of overfitting, it still currently has a 83.87% accuracy.
+While the model does show signs of overfitting, it still currently has an accuracy over 80%.
