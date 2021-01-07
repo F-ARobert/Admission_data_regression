@@ -145,11 +145,6 @@ for train_index, test_index in kf.split(features):
     all_mae_histories.append(train_history.history['mae'])
     all_val_mae_histories.append(train_history.history['val_mae'])
 
-    # Evaluate model
-    # res_mse, res_mae = model.evaluate(features_test_scaled, labels_test, verbose=0)
-    # mae_score.append(res_mae)
-    # mse_score.append(res_mae)
-
     # Evaluate accuracy of predictions
     pred_values = model.predict(features_test_scaled)
     acc = r2_score(labels_test, pred_values)
