@@ -14,12 +14,16 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
 from sklearn.model_selection import KFold
 
+# Model parameters
 num_epochs = 400
 batch_size = 16
 nb_neurons = 64
 learning_rate = 0.001
+# EarlyStopping
 min_delta = 0.00001
 patience = 20
+# Because we don't have a lot of data, we should use k-fold validation
+k = 5  # Number of units
 
 
 def create_model():
@@ -95,9 +99,6 @@ features = dataset.iloc[:, 0:-1]  # Select all rows from all columns save last
 # print(labels.describe())
 
 # Split training data and test data
-# Because we don't have a lot of data, we should use k-fold validation
-# Number of k units
-k = 5
 kf = KFold(n_splits=k, shuffle=True, random_state=15)
 
 # Normalize data
