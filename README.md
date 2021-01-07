@@ -10,15 +10,15 @@ Seeing as only 500 data points are available, a 5 ply K-fold cross-validation wa
 ## General model parameters are:
 
 ### Model parameters
-num_epochs = 400
-batch_size = 16
-nb_neurons = 64
-learning_rate = 0.001
+num_epochs = 400  
+batch_size = 16  
+nb_neurons = 64  
+learning_rate = 0.001  
 ### EarlyStopping
-min_delta = 0.00001
-patience = 20
+min_delta = 0.00001  
+patience = 20  
 ### Because we don't have a lot of data, we should use k-fold validation
-k = 5  # Number of units
+k = 5  # Number of units  
 
 ## Conclusion
 While the model does show signs of overfitting, it still currently has an accuracy over 80%.
