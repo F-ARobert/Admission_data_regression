@@ -10,10 +10,8 @@ from tensorflow.keras.layers import InputLayer
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import Normalizer
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import r2_score, accuracy_score
+from sklearn.metrics import r2_score
 from sklearn.model_selection import KFold
 
 num_epochs = 400
@@ -34,7 +32,7 @@ def create_model():
     # Add layers to model
     base_model.add(inputs)
     base_model.add(Dense(nb_neurons, activation="relu"))
-    #base_model.add(Dense(nb_neurons, activation="relu"))
+    # base_model.add(Dense(nb_neurons, activation="relu"))
     base_model.add(Dense(1))  # Model output. Regression model == single output
 
     # Initialize optimizer and compile model
@@ -73,11 +71,11 @@ def pad_array(array):
     max_length = find_max_length(array)
     array_pad = []
     for i in array:
-        len(i) < max_length
         diff = max_length - len(i)
         array_pad.append(np.pad(i, (0, diff), 'constant', constant_values=i[-1]))
 
     return array_pad, max_length
+
 
 # Import data
 dataset = pd.read_csv("admissions_data.csv")
@@ -104,9 +102,7 @@ kf = KFold(n_splits=k, shuffle=True, random_state=15)
 
 # Normalize data
 # Creating the transformer that will be applied to the data
-#norm = Normalizer()
-norm = StandardScaler() # Standard sclaer yeilds better results
-
+norm = StandardScaler()  # StandardScaler yields better results
 
 # Create callback for EarlyStopping
 # Min_delta represents 0.01%
@@ -160,7 +156,6 @@ for train_index, test_index in kf.split(features):
     acc = r2_score(labels_test, pred_values)
     acc_score.append(acc)
 
-
 # Before averages are calculated, reshape vector lengths
 loss_pad, max_epoch = pad_array(loss)
 val_loss_pad, max_epoch = pad_array(val_loss)
@@ -203,6 +198,3 @@ ax2.set_xlabel('epoch')
 ax2.legend(['train', 'validation'], loc='upper right')
 plt.tight_layout()
 plt.show()
-
-# todo Implement mat plot lib plots of error vs epochs
-# todo Add Early stopping to prevent overfitting
