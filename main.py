@@ -16,8 +16,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, accuracy_score
 from sklearn.model_selection import KFold
 
-num_epochs = 100
-batch_size = 8
+num_epochs = 400
+batch_size = 16
+nb_neurons = 64
+learning_rate = 0.001
 
 
 def create_model():
@@ -29,13 +31,13 @@ def create_model():
 
     # Add layers to model
     base_model.add(inputs)
-    base_model.add(Dense(64, activation="relu"))
-    #base_model.add(Dense(32, activation="relu"))
+    base_model.add(Dense(nb_neurons, activation="relu"))
+    #base_model.add(Dense(nb_neurons, activation="relu"))
     base_model.add(Dense(1))  # Model output. Regression model == single output
 
     # Initialize optimizer and compile model
     # Create instance of Adam
-    opt = Adam(learning_rate=0.001)
+    opt = Adam(learning_rate=learning_rate)
 
     # Compile model
     base_model.compile(loss='mse', metrics=['mae'], optimizer=opt)
