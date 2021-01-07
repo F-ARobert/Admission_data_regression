@@ -105,7 +105,6 @@ kf = KFold(n_splits=k, shuffle=True, random_state=15)
 norm = StandardScaler()  # StandardScaler yields better results
 
 # Create callback for EarlyStopping
-# Min_delta represents 0.01%
 callback = EarlyStopping(monitor='loss', min_delta=min_delta, patience=patience, mode='min', restore_best_weights=True)
 
 # Create model
